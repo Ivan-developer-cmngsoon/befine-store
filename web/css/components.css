@@ -105,4 +105,3 @@ input:focus, select:focus { outline: 2px solid var(--accent-soft); outline-offse
   text-transform:uppercase;color:#3a1f00;background:linear-gradient(180deg,#ffd98a,#f2a63c);
   padding:5px 10px;border-radius:999px;line-height:1;box-shadow:0 4px 12px rgba(0,0,0,.28);white-space:nowrap}
 .card .vessel .oferta{position:absolute;top:12px;right:12px;z-index:1}
-.float .buywrap .oferta{align-self:flex-end}

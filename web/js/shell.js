@@ -48,12 +48,17 @@
       <a class="brand" href="index.html"><img src="assets/logo-befine.png" alt="Befine"></a>
       <nav class="nav">
         ${NAV.map(navLink).join("")}
+        <a class="nav-cuenta" href="cuenta.html"${isActive("cuenta.html")}>Mi cuenta · Ingresar</a>
       </nav>
       <span class="spacer"></span>
       <form class="search" action="catalogo.html" method="get" role="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input type="text" name="q" placeholder="Buscar…" aria-label="Buscar">
       </form>
+      <a class="acct-btn" href="cuenta.html" aria-label="Mi cuenta" title="Mi cuenta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span class="acct-ini" hidden></span>
+      </a>
       <button class="cart-btn" aria-label="Ver carrito">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
         <span class="cart-count">0</span>
@@ -74,6 +79,21 @@
 
   const h = document.getElementById("app-header"); if (h) h.outerHTML = HEADER;
   const f = document.getElementById("app-footer"); if (f) f.outerHTML = FOOTER;
+
+  // Cuenta: si hay sesión, el ícono muestra la inicial del cliente y el menú dice "Mi cuenta"
+  async function pintarCuenta() {
+    if (!window.Befine || !Befine.auth) return;
+    const s = await Befine.auth.sesion();
+    document.querySelectorAll(".acct-btn").forEach((a) => {
+      const ini = a.querySelector(".acct-ini");
+      a.classList.toggle("logged", !!s);
+      if (ini) { ini.hidden = !s; ini.textContent = s ? (s.nombre || "?")[0].toUpperCase() : ""; }
+      a.setAttribute("aria-label", s ? "Mi cuenta (" + s.nombre + ")" : "Ingresar o crear cuenta");
+    });
+    document.querySelectorAll(".nav-cuenta").forEach((a) => { a.textContent = s ? "Mi cuenta · " + (s.nombre || "").split(" ")[0] : "Ingresar · Crear cuenta"; });
+  }
+  pintarCuenta();
+  if (window.Befine && Befine.auth) Befine.auth.onCambio(() => pintarCuenta());
 
   // Submenú: la flecha lo abre/cierra (PC, celular y teclado). En PC también abre al pasar el mouse (CSS);
   // si lo cierras con la flecha estando encima, la clase .closed anula el hover hasta que saques el mouse.

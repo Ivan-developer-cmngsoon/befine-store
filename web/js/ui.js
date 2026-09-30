@@ -6,7 +6,7 @@
      - catGrad()      : degradado placeholder por categoría -> window.catGrad(slug)
      - Reveals        : animación de aparición al hacer scroll
      - Carrito        : inyecta y controla el cajón (drawer) + contador
-     - Checkout demo  : modal de confirmación (nombre + términos)
+     - Ir a pagar     : lleva a checkout.html (compra como invitado o con cuenta)
      - Menú móvil     : abre/cierra la navegación en pantallas chicas
    Se ejecuta al cargar el DOM. Las páginas solo deben tener el botón
    .cart-btn en la barra; el resto lo monta este archivo.
@@ -45,7 +45,7 @@
     document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   }
 
-  /* ---------- Carrito: inyecta el drawer y el modal de checkout ---------- */
+  /* ---------- Carrito: inyecta el drawer ---------- */
   function buildCartUI() {
     const html = `
       <div class="drawer-backdrop" id="cartBackdrop"></div>
@@ -57,22 +57,7 @@
           <button class="btn btn-primary btn-block" id="cartCheckout">Ir a pagar</button>
         </footer>
       </aside>
-      <div class="overlay" id="checkout" hidden>
-        <div class="panel" role="dialog" aria-modal="true" aria-label="Confirmar pedido">
-          <h3>Confirmar pedido</h3>
-          <p class="prod" id="checkoutResumen">—</p>
-          <label class="field" for="coNombre">¿A nombre de quién va el pedido?</label>
-          <input type="text" id="coNombre" placeholder="Tu nombre" maxlength="40" autocomplete="given-name">
-          <div class="terms">
-            <input type="checkbox" id="coTerms">
-            <label for="coTerms">Acepto los términos y que Befine guarde mis datos para personalizar mi experiencia.</label>
-          </div>
-          <div class="actions">
-            <button class="btn btn-ghost" id="coCancel">Cancelar</button>
-            <button class="btn btn-primary" id="coConfirm" disabled>Confirmar compra</button>
-          </div>
-        </div>
-      </div>`;
+`;
     document.body.insertAdjacentHTML("beforeend", html);
 
     const backdrop = document.getElementById("cartBackdrop");
@@ -84,29 +69,13 @@
     document.getElementById("cartClose").addEventListener("click", close);
     backdrop.addEventListener("click", close);
 
-    // Checkout modal
-    const modal = document.getElementById("checkout");
-    const nombre = document.getElementById("coNombre");
-    const terms = document.getElementById("coTerms");
-    const confirm = document.getElementById("coConfirm");
-    const refresh = () => { confirm.disabled = !(terms.checked && nombre.value.trim()); };
-    nombre.addEventListener("input", refresh); terms.addEventListener("change", refresh);
-    document.getElementById("coCancel").addEventListener("click", () => modal.hidden = true);
-    modal.addEventListener("click", (e) => { if (e.target === modal) modal.hidden = true; });
-    // Abrir el checkout (lo usan el carrito y el botón "Comprar ahora")
+    // Ir a pagar: el checkout es una página propia (checkout.html), compra como invitado o con cuenta
     function openCheckout() {
       if (Store.count() === 0) { window.toast("Tu carrito está vacío."); return; }
-      document.getElementById("checkoutResumen").textContent =
-        Store.count() + " producto(s) · Total " + Befine.clp(Store.total());
-      modal.hidden = false; close(); setTimeout(() => nombre.focus(), 50);
+      location.href = "checkout.html";
     }
-    window.openCheckout = openCheckout;   // disponible para "Comprar ahora"
+    window.openCheckout = openCheckout;   // lo usan el carrito y el botón "Comprar ahora"
     document.getElementById("cartCheckout").addEventListener("click", openCheckout);
-    confirm.addEventListener("click", () => {
-      const n = nombre.value.trim(); if (!n || !terms.checked) return;
-      modal.hidden = true; Store.clear();
-      window.toast("¡Listo, " + n + "! Pedido confirmado (demo). Aquí se conectaría Mercado Pago.");
-    });
 
     // Redibujar el contenido del carrito cada vez que cambia
     Store.subscribe(renderCart);

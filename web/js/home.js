@@ -188,24 +188,5 @@
       renderDots(); start();
     }
 
-    /* (El "Catálogo cine" se movió a la página de productos: js/catalogo.js) */
-
-    /* (El selector de horario se movió a fx.js para que funcione en todas las páginas) */
-
-    /* ---------- Botón encender/apagar animación (opcional, no afecta la compra) ---------- */
-    const fxBtn = document.getElementById("toggleFx");
-    if (fxBtn) {
-      // La animación la controla window.BefineFx (fx.js): guarda la preferencia
-      // y la aplica en TODAS las páginas. El sonido es independiente (su botón).
-      const ico = fxBtn.querySelector(".ico"), txt = fxBtn.querySelector(".txt");
-      const sync = () => {
-        const on = window.BefineFx ? window.BefineFx.isOn() : true;
-        fxBtn.setAttribute("aria-pressed", String(on));
-        if (ico) ico.textContent = on ? "⏸" : "▶";
-        if (txt) txt.textContent = on ? "Apagar animación" : "Encender animación";
-      };
-      fxBtn.addEventListener("click", () => { if (window.BefineFx) window.BefineFx.set(!window.BefineFx.isOn()); sync(); });
-      sync();
-    }
   });
 })();

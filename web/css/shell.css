@@ -124,6 +124,19 @@ body.tema-claro .has-sub:hover .sub-toggle, body.tema-claro .has-sub.open .sub-t
   font-size: 11px; font-weight: 800; display: grid; place-items: center;
 }
 
+/* Botón "Mi cuenta" (junto al carrito) */
+.acct-btn { position: relative; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: rgba(6,26,60,.5);
+  color: var(--accent-soft); display: grid; place-items: center; transition: transform .15s; flex: 0 0 auto; }
+.acct-btn:hover { transform: translateY(-2px); }
+.acct-btn svg { width: 20px; height: 20px; }
+.acct-btn.logged svg { display: none; }
+.acct-btn .acct-ini { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 15px; color: #fff;
+  background: linear-gradient(140deg, var(--accent-soft), var(--accent)); }
+.acct-btn .acct-ini[hidden] { display: none; }
+body.tema-claro .acct-btn { background: #fff; color: var(--accent); }
+.nav .nav-cuenta { display: none; }
+@media (max-width: 720px) { .acct-btn { display: none; } .nav .nav-cuenta { display: block; } }
+
 /* Menú hamburguesa (solo móvil) */
 .menu-btn { display: none; width: 42px; height: 42px; border-radius: 12px;
   border: 1px solid var(--line); background: rgba(6,26,60,.5); color: var(--ink); cursor: pointer; }
@@ -370,7 +383,6 @@ body.tema-claro.fx-off { background: var(--bg) !important; }
 body.tema-claro .loader h1,
 body.tema-claro .loader h1 .accent { color: #eef7fd; }
 body.tema-claro .loader p.msg { color: rgba(238,247,253,.92); }
-body.tema-claro .loader .l-eyebrow { color: #9FC8E8; }
 
 /* Botón "tema claro" del panel de vista previa (dev) */
 .dev-bands .dev-theme { font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;

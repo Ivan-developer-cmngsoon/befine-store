@@ -40,13 +40,11 @@
 .loader.hide { opacity: 0; visibility: hidden; pointer-events: none; }
 .loader-inner { max-width: 640px; }
 .loader .l-logo { width: clamp(150px,26vw,210px); height: auto; margin: 0 auto 22px; display: block; filter: drop-shadow(0 12px 34px rgba(0,0,0,.5)); opacity: 0; transform: translateY(12px); animation: up .35s 0s forwards; }
-.loader .l-eyebrow { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent-soft); font-weight: 700; margin: 0 0 14px; opacity: 0; transform: translateY(12px); animation: up .35s 0s forwards; }
 .loader h1 { font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; font-size: clamp(40px,9vw,84px); line-height: .98; margin: 0; text-wrap: balance; text-shadow: 0 12px 44px rgba(0,0,0,.45); opacity: 0; transform: translateY(16px); animation: up .35s .05s forwards; }
 .loader h1 .accent { color: var(--accent-soft); }
 .loader p.msg { margin: 16px auto 0; font-size: clamp(16px,2.6vw,21px); color: var(--ink); opacity: 0; transform: translateY(12px); max-width: 32ch; text-shadow: 0 4px 18px rgba(0,0,0,.45); animation: up .35s .1s forwards; }
 .loader .bar { margin: 34px auto 0; width: 180px; height: 4px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; }
 .loader .bar span { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg,var(--accent-soft),var(--accent)); animation: load .7s ease forwards; }
-.loader .enter { margin-top: 20px; font-size: 13px; color: var(--muted); opacity: 0; animation: up .3s .2s forwards; }
 @keyframes load { to { width: 100%; } }
 @keyframes up { to { opacity: 1; transform: none; } }
 
@@ -61,14 +59,9 @@
 .hero p.sub { margin: 18px 0 0; font-size: clamp(16px,2.3vw,20px); color: var(--ink); opacity: .92; max-width: 46ch; }
 /* Frase secundaria pequeña (el "mueve el mouse"): discreta, no protagonista */
 .hero .hint { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); opacity: .7; }
-.hero .cta { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
 .hero .trust { margin-top: 22px; display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
 .hero .trust b { color: var(--accent-soft); }
 
-/* Botón opcional para encender/apagar la animación (discreto, no estorba) */
-.fx-toggle { margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--muted); transition: color .2s, border-color .2s; }
-.fx-toggle:hover { color: var(--accent-soft); border-color: var(--accent); }
-.fx-toggle .ico { font-size: 12px; }
 
 /* Cuando la animación está apagada: se ocultan agua, burbujas y cursor custom */
 body.fx-off #water, body.fx-off .bubbles { opacity: 0; transition: opacity .4s ease; }
@@ -130,25 +123,6 @@ body:not(.tema-claro) .qorder .aviso-recarga .ico { background: #8EC5FF; color: 
 @keyframes floatCard { 0%,100% { transform: translateY(-7px); } 50% { transform: translateY(7px); } }
 @media (prefers-reduced-motion: reduce) { .track .card { animation: none; } }
 
-/* ---------- Catálogo CINE: tira flotante en 3D ---------- */
-.cine { padding-block: clamp(30px,6vw,64px); perspective: 1500px; }
-.float-list { display: flex; flex-direction: column; gap: clamp(48px,11vh,130px); align-items: center; transform-style: preserve-3d; }
-.float { width: min(680px,94%); transform-style: preserve-3d; will-change: transform, opacity; transform-origin: center 45%; }
-.float-inner { position: relative; border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 48px 92px -34px rgba(0,0,0,.85); animation: bob 6.5s ease-in-out infinite; }
-.float:nth-child(even) .float-inner { animation-delay: -3.2s; }
-@keyframes bob { 0%,100% { transform: translateY(-7px); } 50% { transform: translateY(7px); } }
-.float .art { height: min(58vh,440px); position: relative; background: var(--s-grad); background-size: cover; display: flex; align-items: flex-end; }
-.float .art::before { content: ""; position: absolute; inset: 0; background: radial-gradient(130% 90% at 25% 12%,rgba(255,255,255,.24),transparent 55%),linear-gradient(180deg,rgba(4,16,40,.02) 40%,rgba(4,16,40,.72)); }
-.float .num { position: absolute; top: 18px; left: 20px; z-index: 2; font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--accent-soft); letter-spacing: .06em; opacity: .9; }
-.float .tag { position: absolute; top: 18px; right: 20px; z-index: 2; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--azul-profundo); background: rgba(224,236,255,.94); padding: 5px 10px; border-radius: 999px; }
-.float .cap { position: relative; z-index: 2; padding: clamp(18px,3.4vw,32px); width: 100%; display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
-.float .cap h3 { font-family: var(--font-display); font-weight: 800; letter-spacing: -.02em; font-size: clamp(24px,4.4vw,46px); line-height: .98; margin: 0; text-shadow: 0 12px 40px rgba(0,0,0,.55); }
-.float .cap .meta { color: var(--ink); opacity: .85; margin-top: 6px; font-size: 14px; }
-.float .buywrap { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; }
-.float .price { font-family: var(--font-display); font-weight: 700; font-size: clamp(20px,2.8vw,28px); text-shadow: 0 6px 22px rgba(0,0,0,.55); }
-.float .price s { color: var(--celeste); opacity: .7; font-size: .6em; margin-left: 6px; }
-.float .reflect { height: 88px; margin-top: 8px; border-radius: var(--radius-lg); background: var(--s-grad); filter: blur(12px); opacity: .22; transform: scaleY(-1); -webkit-mask: linear-gradient(180deg,rgba(0,0,0,.55),transparent 80%); mask: linear-gradient(180deg,rgba(0,0,0,.55),transparent 80%); }
-@media (max-width: 640px) { .float .cap { flex-direction: column; align-items: flex-start; } .float .buywrap { align-items: flex-start; flex-direction: row; } }
 
 /* ---------- Botón de sonido ---------- */
 .sound-btn { position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom,0px)); z-index: 40; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: rgba(10,40,92,.6); backdrop-filter: blur(8px); color: var(--accent-soft); display: grid; place-items: center; cursor: pointer; transition: transform .15s ease; }
@@ -169,11 +143,6 @@ body:not(.tema-claro) .qorder .aviso-recarga .ico { background: #8EC5FF; color: 
   line-height: 1; color: var(--accent-soft); letter-spacing: -.02em; }
 .rev-summary .avg-side { display: flex; flex-direction: column; gap: 4px; }
 .rev-summary .count { font-size: 13px; color: var(--muted); }
-.rev-summary .source { margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 700; color: var(--ink); background: rgba(255,255,255,.05);
-  border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; }
-.rev-summary .source .g { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
-  background: #fff; color: #4285F4; font-family: var(--font-display); font-weight: 800; font-size: 14px; }
 
 .rev-summary .rev-actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
 @media (max-width: 560px) { .rev-summary .rev-actions { margin-left: 0; width: 100%; } .rev-summary .rev-actions .btn { flex: 1; white-space: nowrap; font-size: 13px; padding-inline: 10px; } }
@@ -229,7 +198,6 @@ body.tema-claro .rev-dots button:not(.on) { background: rgba(11,78,122,.25); }
 .rev-card .quote { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* Modo claro: texto legible sobre fondo blanco/azul */
-body.tema-claro .rev-summary .source,
 body.tema-claro .rev-card { color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -238,8 +206,6 @@ body.tema-claro .rev-card { color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {
   .bubbles, .cur-dot, .cur-ring { display: none; }
-  .float-inner { animation: none; }
-  .float { transform: none !important; opacity: 1 !important; }
 }
 
 /* PC: la tarjeta de compra rápida sube y se compacta para verse completa sin hacer scroll */

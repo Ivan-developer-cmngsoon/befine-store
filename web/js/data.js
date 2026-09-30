@@ -222,11 +222,183 @@ const Befine = {
     return data || [];
   },
 
-  /* Perfil del usuario autenticado. Sin login todavía -> null (visitante).
-     Cuando exista Supabase Auth: leer public.perfiles del usuario de sesión. */
+  /* Perfil del usuario autenticado (o null si es visitante). */
   async getPerfil() {
-    return null;
+    return this.auth.sesion();
   },
+};
+
+/* =====================================================================
+   CUENTA — Supabase Auth (REAL). Correo+contraseña, Google y recuperación.
+   Requisitos en Supabase (panel): Authentication → Providers → Email (activo);
+   Google (cuando se configure el cliente OAuth); URL Configuration → Site URL
+   y Redirect URLs con el dominio del sitio (ver claude/pendiente-backend-checkout.md).
+   ===================================================================== */
+// URL base del sitio (para los enlaces de correo y el regreso desde Google). En file:// no aplica.
+const APP_URL = /^https?:/.test(location.protocol) ? location.href.replace(/[^/]*([?#].*)?$/, "") : null;
+
+// Mensajes de Supabase → español claro para el cliente
+function _msgAuth(e) {
+  const m = ((e && (e.message || e.error_description)) || String(e || "")).toLowerCase();
+  if (m.includes("invalid login")) return "Correo o contraseña incorrectos.";
+  if (m.includes("already registered") || m.includes("already been registered")) return "Ya existe una cuenta con ese correo. Ingresa o recupera tu contraseña.";
+  if (m.includes("email not confirmed")) return "Confirma tu correo: te enviamos un enlace al registrarte.";
+  if (m.includes("password") && (m.includes("at least") || m.includes("6 characters"))) return "La contraseña debe tener al menos 8 caracteres.";
+  if (m.includes("rate limit") || m.includes("too many")) return "Demasiados intentos. Espera un minuto e inténtalo de nuevo.";
+  if (m.includes("provider is not enabled") || m.includes("unsupported provider")) return "El ingreso con Google aún no está activado.";
+  if (m.includes("failed to fetch") || m.includes("network")) return "Sin conexión. Revisa tu internet e inténtalo de nuevo.";
+  return "No pudimos completar la acción. Inténtalo nuevamente.";
+}
+
+Befine.auth = {
+  /* Sesión actual + datos de public.perfiles → { id, email, nombre, telefono, rut, razon_social, giro, es_empresa, puntos } | null */
+  async sesion() {
+    try {
+      const { data } = await sb.auth.getSession();
+      const u = data && data.session && data.session.user;
+      if (!u || u.is_anonymous) return null;
+      const { data: pf } = await sb.from("perfiles")
+        .select("nombre,apellido,telefono,rut,razon_social,giro,es_empresa,puntos_saldo")
+        .eq("id", u.id).maybeSingle();
+      const meta = u.user_metadata || {};
+      return {
+        id: u.id, email: u.email,
+        nombre: (pf && pf.nombre) || meta.nombre || meta.full_name || (u.email || "").split("@")[0],
+        apellido: pf && pf.apellido, telefono: (pf && pf.telefono) || meta.telefono || "",
+        rut: pf && pf.rut, razon_social: pf && pf.razon_social, giro: pf && pf.giro,
+        es_empresa: !!(pf && pf.es_empresa), puntos: (pf && pf.puntos_saldo) || 0,
+      };
+    } catch (e) { return null; }
+  },
+  async ingresar(email, password) {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    return error ? { ok: false, error: _msgAuth(error) } : { ok: true };
+  },
+  /* Registro: el trigger handle_new_user crea la fila en perfiles con el nombre enviado */
+  async registrar({ nombre, email, password, telefono }) {
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { data: { nombre, telefono }, emailRedirectTo: APP_URL ? APP_URL + "cuenta.html" : undefined },
+    });
+    if (error) return { ok: false, error: _msgAuth(error) };
+    // Si el proyecto exige confirmar correo, no hay sesión todavía
+    return { ok: true, confirmar: !(data && data.session) };
+  },
+  async google(volver) {
+    if (!APP_URL) return { ok: false, error: "Google funciona al abrir el sitio desde un servidor (http/https), no como archivo local." };
+    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: APP_URL + (volver || "cuenta.html") } });
+    return error ? { ok: false, error: _msgAuth(error) } : { ok: true };
+  },
+  async recuperar(email) {
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: APP_URL ? APP_URL + "cuenta.html?modo=nueva" : undefined });
+    return error ? { ok: false, error: _msgAuth(error) } : { ok: true };
+  },
+  async nuevaClave(password) {
+    const { error } = await sb.auth.updateUser({ password });
+    return error ? { ok: false, error: _msgAuth(error) } : { ok: true };
+  },
+  async salir() { await sb.auth.signOut(); },
+  onCambio(cb) { return sb.auth.onAuthStateChange((evento) => cb(evento)); },
+};
+
+/* =====================================================================
+   CHECKOUT — cobertura, despacho, días de entrega, pedido y pago.
+   Lectura de cobertura: REAL (tablas comunas_cobertura / zonas_despacho /
+   parametros, lectura pública). Crear pedido y pagar: DEMO hasta el backend
+   (compra como invitado + Mercado Pago). La UI no cambia al conectarlo.
+   ===================================================================== */
+// Contacto del negocio (pendiente migrar a parametros / Admin)
+const CONTACTO = { whatsapp: "56958549641" };
+// Regla de entrega: lunes a viernes; el pedido estándar llega el siguiente día hábil.
+// FERIADOS: fechas "AAAA-MM-DD" sin reparto (pendiente: editable desde el Admin).
+const ENTREGA = { diasHabiles: [1, 2, 3, 4, 5], diasAgendables: 20, feriados: [] };
+// Respaldo si la BD no responde (mismos datos del schema)
+const COBERTURA_RESPALDO = {
+  envioGratisDesde: 7000,
+  comunas: [
+    { comuna: "Quilicura", zona: "Quilicura", costo: 0 },
+    { comuna: "Huechuraba", zona: "Sector Norte", costo: 2500 },
+    { comuna: "Recoleta", zona: "Sector Norte", costo: 2500 },
+    { comuna: "Valle Grande", zona: "Sector Norte", costo: 2500 },
+    { comuna: "Valle Lo Campino", zona: "Sector Norte", costo: 2500 },
+  ],
+};
+const _iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const _esHabil = (d) => ENTREGA.diasHabiles.includes(d.getDay()) && !ENTREGA.feriados.includes(_iso(d));
+
+Befine.contacto = CONTACTO;
+
+/* Comunas con cobertura y su costo → { envioGratisDesde, comunas:[{comuna, zona, zona_id, costo}] } */
+Befine.getCobertura = async function () {
+  try {
+    const [{ data: com, error: e1 }, { data: par }] = await Promise.all([
+      sb.from("comunas_cobertura").select("comuna,zona_id,zonas_despacho(nombre,costo_despacho,activo)").eq("activo", true).order("comuna"),
+      sb.from("parametros").select("valor").eq("clave", "envio_gratis_minimo").maybeSingle(),
+    ]);
+    if (e1 || !com || !com.length) throw e1 || new Error("sin comunas");
+    return {
+      envioGratisDesde: par ? Number(par.valor) : COBERTURA_RESPALDO.envioGratisDesde,
+      comunas: com.filter((c) => !c.zonas_despacho || c.zonas_despacho.activo !== false).map((c) => ({
+        comuna: c.comuna, zona_id: c.zona_id, zona: c.zonas_despacho ? c.zonas_despacho.nombre : "",
+        costo: c.zonas_despacho ? c.zonas_despacho.costo_despacho : 0,
+      })),
+    };
+  } catch (e) { return COBERTURA_RESPALDO; }
+};
+
+/* Costo de despacho que VE el cliente (el backend lo recalcula al crear el pedido) */
+Befine.costoDespacho = function (cobertura, comuna, subtotal) {
+  const c = cobertura && cobertura.comunas.find((x) => x.comuna === comuna);
+  if (!c) return null;
+  if (c.costo > 0 && subtotal >= cobertura.envioGratisDesde) return 0;
+  return c.costo;
+};
+
+/* Días de entrega: { estandar: Date (siguiente día hábil), agendables: [Date...] } */
+Befine.diasEntrega = function (desde = new Date()) {
+  const d = new Date(desde.getFullYear(), desde.getMonth(), desde.getDate());
+  const sig = () => { do { d.setDate(d.getDate() + 1); } while (!_esHabil(d)); return new Date(d); };
+  const estandar = sig(), agendables = [estandar];
+  while (agendables.length < ENTREGA.diasAgendables) agendables.push(sig());
+  return { estandar, agendables };
+};
+Befine.isoFecha = _iso;
+
+/* Crear pedido. payload = {
+     contacto:{nombre,email,telefono}, direccion:{calle,numero,depto,comuna,region,referencia},
+     entrega:{tipo:'estandar'|'agendada', fecha:'AAAA-MM-DD'}, documento:{tipo:'boleta'|'factura',rut,razon_social,giro},
+     items:[{variante_id,nombre,variante,cantidad,precio_unitario}], subtotal, costo_despacho, total }
+   DEMO: se guarda en este navegador. PRODUCCIÓN: RPC/Edge Function que valida precios,
+   recalcula totales y crea pedidos + detalle_pedido (ver claude/pendiente-backend-checkout.md). */
+Befine.crearPedido = async function (payload) {
+  await new Promise((r) => setTimeout(r, 650));
+  let lista = [];
+  try { lista = JSON.parse(localStorage.getItem("befine_pedidos_demo") || "[]"); } catch (e) {}
+  const pedido = { ...payload, id: "demo-" + Date.now(), numero: 1000 + lista.length + 1, estado: "pendiente_pago", created_at: new Date().toISOString() };
+  lista.unshift(pedido);
+  try { localStorage.setItem("befine_pedidos_demo", JSON.stringify(lista.slice(0, 30))); } catch (e) {}
+  return { ok: true, pedido };
+};
+
+/* Pagar con Mercado Pago. DEMO: aprueba en ~1 s. PRODUCCIÓN: una Edge Function crea la
+   preferencia de pago y se redirige a su init_point; el webhook confirma el pago (HU-08/09). */
+Befine.pagar = async function (pedido) {
+  await new Promise((r) => setTimeout(r, 900));
+  pedido.estado = "pagado";
+  try {
+    const lista = JSON.parse(localStorage.getItem("befine_pedidos_demo") || "[]");
+    const it = lista.find((x) => x.id === pedido.id); if (it) it.estado = "pagado";
+    localStorage.setItem("befine_pedidos_demo", JSON.stringify(lista));
+  } catch (e) {}
+  return { ok: true, estado: "aprobado" };
+};
+
+/* Pedidos del cliente (por correo). DEMO: los de este navegador. PRODUCCIÓN: select a pedidos (RLS). */
+Befine.misPedidos = async function (email) {
+  try {
+    const lista = JSON.parse(localStorage.getItem("befine_pedidos_demo") || "[]");
+    return email ? lista.filter((p) => p.contacto && p.contacto.email === email) : lista;
+  } catch (e) { return []; }
 };
 
 // Exponer en window para que las páginas lo usen sin bundler (igual que antes).
