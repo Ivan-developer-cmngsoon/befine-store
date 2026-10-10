@@ -14,3 +14,6 @@ clave_API_*.txt
 # Restos de Flutter (retirado por SC-02)
 .dart_tool/
 build/
+
+# Dependencias de Node (si se instalan)
+node_modules/
